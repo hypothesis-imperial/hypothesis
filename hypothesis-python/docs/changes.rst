@@ -21,6 +21,175 @@ Hypothesis APIs come in three flavours:
 You should generally assume that an API is internal unless you have specific
 information to the contrary.
 
+.. _v3.82.1:
+
+-------------------
+3.82.1 - 2018-10-29
+-------------------
+
+This patch fixes :func:`~hypothesis.strategies.from_type` on Python 2
+for classes where ``cls.__init__ is object.__init__``.
+Thanks to ccxcz for reporting :issue:`1656`.
+
+.. _v3.82.0:
+
+-------------------
+3.82.0 - 2018-10-29
+-------------------
+
+The ``alphabet`` argument for :func:`~hypothesis.strategies.text` now
+uses its default value of ``characters(blacklist_categories=('Cs',))``
+directly, instead of hiding that behind ``alphabet=None`` and replacing
+it within the function.  Passing ``None`` is therefore deprecated.
+
+.. _v3.81.0:
+
+-------------------
+3.81.0 - 2018-10-27
+-------------------
+
+:class:`~hypothesis.stateful.GenericStateMachine` and
+:class:`~hypothesis.stateful.RuleBasedStateMachine` now raise an explicit error
+when instances of :obj:`~hypothesis.settings` are assigned to the classes'
+settings attribute, which is a no-op (:issue:`1643`). Instead assign to
+``SomeStateMachine.TestCase.settings``, or use ``@settings(...)`` as a class
+decorator to handle this automatically.
+
+.. _v3.80.0:
+
+-------------------
+3.80.0 - 2018-10-25
+-------------------
+
+Since :ref:`version 3.68.0 <v3.68.0>`, :func:`~hypothesis.extra.numpy.arrays`
+checks that values drawn from the ``elements`` and ``fill`` strategies can be
+safely cast to the dtype of the array, and emits a warning otherwise.
+
+This release expands the checks to cover overflow for finite ``complex64``
+elements and string truncation caused by too-long elements or trailing null
+characters (:issue:`1591`).
+
+.. _v3.79.4:
+
+-------------------
+3.79.4 - 2018-10-25
+-------------------
+
+Tests using :func:`@given <hypothesis.given>` now shrink errors raised from
+:pypi:`pytest` helper functions, instead of reporting the first example found.
+
+This was previously fixed in :ref:`version 3.56.0 <v3.56.0>`, but only for
+stateful testing.
+
+.. _v3.79.3:
+
+-------------------
+3.79.3 - 2018-10-23
+-------------------
+
+Traceback elision is now disabled on Python 2, to avoid an import-time
+:class:`python:SyntaxError` under Python < 2.7.9 (Python: :bpo:`21591`,
+:ref:`Hypothesis 3.79.2 <v3.79.2>`: :issue:`1648`).
+
+We encourage all users to `upgrade to Python 3 before the end of 2019
+<https://pythonclock.org/>`_.
+
+.. _v3.79.2:
+
+-------------------
+3.79.2 - 2018-10-23
+-------------------
+
+This patch shortens tracebacks from Hypothesis, so you can see exactly
+happened in your code without having to skip over irrelevant details
+about our internals (:issue:`848`).
+
+In the example test (see :pull:`1582`), this reduces tracebacks from
+nine frames to just three - and for a test with multiple errors, from
+seven frames per error to just one!
+
+If you *do* want to see the internal details, you can disable frame
+elision by setting :obj:`~hypothesis.settings.verbosity` to ``debug``.
+
+.. _v3.79.1:
+
+-------------------
+3.79.1 - 2018-10-22
+-------------------
+
+The abstract number classes :class:`~python:numbers.Number`,
+:class:`~python:numbers.Complex`, :class:`~python:numbers.Real`,
+:class:`~python:numbers.Rational`, and :class:`~python:numbers.Integral`
+are now supported by the :func:`~hypothesis.strategies.from_type`
+strategy.  Previously, you would have to use
+:func:`~hypothesis.strategies.register_type_strategy` before they
+could be resolved (:issue:`1636`)
+
+.. _v3.79.0:
+
+-------------------
+3.79.0 - 2018-10-18
+-------------------
+
+This release adds a CLI flag for verbosity ``--hypothesis-verbosity`` to
+the Hypothesis pytest plugin, applied after loading the profile specified by
+``--hypothesis-profile``. Valid options are the names of verbosity settings,
+quiet, normal, verbose or debug.
+
+Thanks to Bex Dunn for writing this patch at the PyCon Australia
+sprints!
+
+The pytest header now correctly reports the current profile if
+``--hypothesis-profile`` has been used.
+
+Thanks to Mathieu Paturel for the contribution at the Canberra Python
+Hacktoberfest.
+
+.. _v3.78.0:
+
+-------------------
+3.78.0 - 2018-10-16
+-------------------
+
+This release has deprecated the generation of integers, floats and fractions
+when the conversion of the upper and/ or lower bound is not 100% exact, e.g.
+when an integer gets passed a bound that is not a whole number. (:issue:`1625`)
+
+Thanks to Felix Grünewald for this patch during Hacktoberfest 2018.
+
+.. _v3.77.0:
+
+-------------------
+3.77.0 - 2018-10-16
+-------------------
+
+This minor release adds functionality to :obj:`~hypothesis.settings` allowing
+it to be used as a decorator on :obj:`~hypothesis.stateful.RuleBasedStateMachine`
+and :obj:`~hypothesis.stateful.GenericStateMachine`.
+
+Thanks to Tyler Nickerson for this feature in #hacktoberfest!
+
+.. _v3.76.1:
+
+-------------------
+3.76.1 - 2018-10-16
+-------------------
+
+This patch fixes some warnings added by recent releases of
+:pypi:`pydocstyle` and :pypi:`mypy`.
+
+.. _v3.76.0:
+
+-------------------
+3.76.0 - 2018-10-11
+-------------------
+
+This release deprecates using floats for ``min_size`` and ``max_size``.
+
+The type hint for ``average_size`` arguments has been changed from
+``Optional[int]`` to None, because non-None values are always ignored and
+deprecated.
+
 .. _v3.75.4:
 
 -------------------
@@ -63,7 +232,7 @@ Thanks to Benjamin Lee for this contribution!
 -------------------
 
 This release deprecates  the use of ``min_size=None``, setting the default
-``min_size`` to 0 (:issue: `1618`).
+``min_size`` to 0 (:issue:`1618`).
 
 .. _v3.74.3:
 

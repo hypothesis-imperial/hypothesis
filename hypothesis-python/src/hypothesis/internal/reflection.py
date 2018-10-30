@@ -116,7 +116,9 @@ def required_args(target, args=(), kwargs=()):
     # Then we try to do the right thing with getfullargspec
     try:
         spec = getfullargspec(
-            target.__init__ if inspect.isclass(target) else target)
+            getattr(target, '__init__', target)
+            if inspect.isclass(target) else target
+        )
     except TypeError:  # pragma: no cover
         return None
     # self appears in the argspec of __init__ and bound methods, but it's an
@@ -544,6 +546,7 @@ def impersonate(target):
         f.__name__ = target.__name__
         f.__module__ = target.__module__
         f.__doc__ = target.__doc__
+        f.__globals__['__hypothesistracebackhide__'] = True
         return f
     return accept
 
