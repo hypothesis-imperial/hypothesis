@@ -67,7 +67,6 @@ from hypothesis.internal.conjecture.engine import ExitReason, \
 from hypothesis.searchstrategy.collections import TupleStrategy
 
 import json
-import re
 
 if False:
     from typing import (  # noqa
