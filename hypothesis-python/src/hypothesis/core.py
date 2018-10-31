@@ -514,7 +514,6 @@ class StateForActualGivenExecution(object):
                             ast.parse(example)
                         except SyntaxError:
                             data.can_reproduce_example_from_repr = False
-                        print(test.__name__)
                         testcase = {}
                         testcase['test_name'] = test.__name__
                         testcase['errors'] = []
