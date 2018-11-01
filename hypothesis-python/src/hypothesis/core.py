@@ -514,16 +514,18 @@ class StateForActualGivenExecution(object):
                             ast.parse(example)
                         except SyntaxError:
                             data.can_reproduce_example_from_repr = False
-
                         testcase = {}
-                        testcase['Variables'] = []
+                        testcase['test_name'] = test.__name__
+                        testcase['errors'] = []
+                        variable_list = []
                         for variableset in text_repr[0].split(', '):
                             [name, value] = variableset.split('=')
-                            variablepair = {'Variable name': name, 'variable value': value}
-                            testcase['Variables'].append(variablepair)
-                        testcase['Error type'] = ((expected_failure[0]).__class__.__name__)
-                        testcase['Error name'] = str(expected_failure[0])
-                        testcase['Traceback'] = expected_failure[1]
+                            variable_pair = {'Variable name': name, 'variable value': value}
+                            variable_list.append(variable_pair)
+                        testcase['errors'].append(variable_list)
+                        # testcase['Error type'] = ((expected_failure[0]).__class__.__name__)
+                        # testcase['Error name'] = str(expected_failure[0])
+                        # testcase['Traceback'] = expected_failure[1]
                         with open('data.txt', 'w') as outfile:
                             json.dump(testcase, outfile)
 
