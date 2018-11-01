@@ -520,7 +520,7 @@ class StateForActualGivenExecution(object):
                         variable_list = []
                         for variableset in text_repr[0].split(', '):
                             [name, value] = variableset.split('=')
-                            variable_pair = {'Variable name': name, 'variable value': value}
+                            variable_pair = {'v_name': name, 'v_value': value}
                             variable_list.append(variable_pair)
                         testcase['errors'].append(variable_list)
                         # testcase['Error type'] = ((expected_failure[0]).__class__.__name__)
