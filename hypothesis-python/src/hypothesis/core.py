@@ -505,6 +505,7 @@ class StateForActualGivenExecution(object):
                     with deterministic_PRNG():
                         args, kwargs = data.draw(self.search_strategy)
                     if expected_failure is not None:
+                        print((test.__name__), args, kwargs, '\n\n\n\n\n\n\n')
                         text_repr[0] = arg_string(test, args, kwargs)
 
                     if print_example:
@@ -526,7 +527,7 @@ class StateForActualGivenExecution(object):
                         # testcase['Error type'] = ((expected_failure[0]).__class__.__name__)
                         # testcase['Error name'] = str(expected_failure[0])
                         # testcase['Traceback'] = expected_failure[1]
-                        with open('data.txt', 'w') as outfile:
+                        with open('data.txt', 'a') as outfile:
                             json.dump(testcase, outfile)
 
                         report('Falsifying example: %s' % (example,))
@@ -600,7 +601,7 @@ class StateForActualGivenExecution(object):
 
     def run(self):
         # Tell pytest to omit the body of this function from tracebacks
-        __tracebackhide__ = True
+        __tracebackhide__ = False
         if global_force_seed is None:
             database_key = str_to_bytes(fully_qualified_name(self.test))
         else:
@@ -611,133 +612,138 @@ class StateForActualGivenExecution(object):
             settings=self.settings, random=self.random,
             database_key=database_key,
         )
-        try:
-            runner.run()
-        finally:
-            self.used_examples_from_database = \
-                runner.used_examples_from_database
-        note_engine_for_statistics(runner)
-        run_time = benchmark_time() - self.start_time
-
-        self.used_examples_from_database = runner.used_examples_from_database
-
-        if runner.used_examples_from_database:
-            if self.settings.derandomize:
-                note_deprecation((
-                    'In future derandomize will imply database=None, but your '
-                    'test: %s is currently using examples from the database. '
-                    'To get the future behaviour, update your settings to '
-                    'include database=None.') % (self.test.__name__, )
-                )
-            if self.__had_seed:
-                note_deprecation((
-                    'In future use of @seed will imply database=None in your '
-                    'settings, but your test: %s is currently using examples '
-                    'from the database. To get the future behaviour, update '
-                    'your settings for this test to include database=None.')
-                    % (self.test.__name__,)
-                )
-
-        timed_out = runner.exit_reason == ExitReason.timeout
-        if runner.call_count == 0:
-            return
-        if runner.interesting_examples:
-            self.falsifying_examples = sorted(
-                [d for d in runner.interesting_examples.values()],
-                key=lambda d: sort_key(d.buffer), reverse=True
-            )
-        else:
-            if runner.valid_examples == 0:
-                if timed_out:
-                    raise Timeout((
-                        'Ran out of time before finding a satisfying '
-                        'example for %s. Only found %d examples in %.2fs.'
-                    ) % (
-                        get_pretty_function_description(self.test),
-                        runner.valid_examples, run_time
-                    ))
-                else:
-                    raise Unsatisfiable(
-                        'Unable to satisfy assumptions of hypothesis %s.' %
-                        (get_pretty_function_description(self.test),)
-                    )
-
-        if not self.falsifying_examples:
-            return
-
-        self.failed_normally = True
-
-        flaky = 0
-
-        for falsifying_example in self.falsifying_examples:
-            ran_example = ConjectureData.for_buffer(falsifying_example.buffer)
-            self.__was_flaky = False
-            assert falsifying_example.__expected_exception is not None
+        for i in [0, 1]:
             try:
-                self.execute(
-                    ran_example,
-                    print_example=True, is_final=True,
-                    expected_failure=(
-                        falsifying_example.__expected_exception,
-                        falsifying_example.__expected_traceback,
+                runner.run()
+            finally:
+                self.used_examples_from_database = \
+                    runner.used_examples_from_database
+            note_engine_for_statistics(runner)
+            run_time = benchmark_time() - self.start_time
+
+            self.used_examples_from_database = runner.used_examples_from_database
+
+            if runner.used_examples_from_database:
+                if self.settings.derandomize:
+                    note_deprecation((
+                        'In future derandomize will imply database=None, but your '
+                        'test: %s is currently using examples from the database. '
+                        'To get the future behaviour, update your settings to '
+                        'include database=None.') % (self.test.__name__, )
                     )
+                if self.__had_seed:
+                    note_deprecation((
+                        'In future use of @seed will imply database=None in your '
+                        'settings, but your test: %s is currently using examples '
+                        'from the database. To get the future behaviour, update '
+                        'your settings for this test to include database=None.')
+                        % (self.test.__name__,)
+                    )
+
+            timed_out = runner.exit_reason == ExitReason.timeout
+            if runner.call_count == 0:
+                return
+            if runner.interesting_examples:
+                self.falsifying_examples = sorted(
+                    [d for d in runner.interesting_examples.values()],
+                    key=lambda d: sort_key(d.buffer), reverse=True
                 )
-            except (UnsatisfiedAssumption, StopTest):
-                report(traceback.format_exc())
-                self.__flaky(
-                    'Unreliable assumption: An example which satisfied '
-                    'assumptions on the first run now fails it.'
-                )
-            except BaseException as e:
-                if len(self.falsifying_examples) <= 1:
-                    raise
-                tb = get_trimmed_traceback()
-                report(''.join(traceback.format_exception(type(e), e, tb)))
-            finally:  # pragma: no cover
-                # This section is in fact entirely covered by the tests in
-                # test_reproduce_failure, but it seems to trigger a lovely set
-                # of coverage bugs: The branches show up as uncovered (despite
-                # definitely being covered - you can add an assert False else
-                # branch to verify this and see it fail - and additionally the
-                # second branch still complains about lack of coverage even if
-                # you add a pragma: no cover to it!
-                # See https://bitbucket.org/ned/coveragepy/issues/623/
-                if self.settings.print_blob is not PrintSettings.NEVER:
-                    failure_blob = encode_failure(falsifying_example.buffer)
-                    # Have to use the example we actually ran, not the original
-                    # falsifying example! Otherwise we won't catch problems
-                    # where the repr of the generated example doesn't parse.
-                    can_use_repr = ran_example.can_reproduce_example_from_repr
-                    if (
-                        self.settings.print_blob is PrintSettings.ALWAYS or (
-                            self.settings.print_blob is PrintSettings.INFER and
-                            self.settings.verbosity >= Verbosity.normal and
-                            not can_use_repr and
-                            len(failure_blob) < 200
+            else:
+                if runner.valid_examples == 0:
+                    if timed_out:
+                        raise Timeout((
+                            'Ran out of time before finding a satisfying '
+                            'example for %s. Only found %d examples in %.2fs.'
+                        ) % (
+                            get_pretty_function_description(self.test),
+                            runner.valid_examples, run_time
+                        ))
+                    else:
+                        raise Unsatisfiable(
+                            'Unable to satisfy assumptions of hypothesis %s.' %
+                            (get_pretty_function_description(self.test),)
                         )
-                    ):
-                        report((
-                            '\n'
-                            'You can reproduce this example by temporarily '
-                            'adding @reproduce_failure(%r, %r) as a decorator '
-                            'on your test case') % (
-                                __version__, failure_blob,))
-            if self.__was_flaky:
-                flaky += 1
 
-        # If we only have one example then we should have raised an error or
-        # flaky prior to this point.
-        assert len(self.falsifying_examples) > 1
+            if not self.falsifying_examples:
+                return
 
-        if flaky > 0:
-            raise Flaky((
-                'Hypothesis found %d distinct failures, but %d of them '
-                'exhibited some sort of flaky behaviour.') % (
-                    len(self.falsifying_examples), flaky))
-        else:
-            raise MultipleFailures((
-                'Hypothesis found %d distinct failures.') % (
-                    len(self.falsifying_examples,)))
+            self.failed_normally = True
+
+            flaky = 0
+            ls = self.falsifying_examples + self.falsifying_examples
+            for falsifying_example in self.falsifying_examples:
+                ran_example = ConjectureData.for_buffer(falsifying_example.buffer)
+                self.__was_flaky = False
+                assert falsifying_example.__expected_exception is not None
+                try:
+                    self.execute(
+                        ran_example,
+                        print_example=True, is_final=True,
+                        expected_failure=(
+                            falsifying_example.__expected_exception,
+                            falsifying_example.__expected_traceback,
+                        )
+                    )
+                except (UnsatisfiedAssumption, StopTest):
+                    report(traceback.format_exc())
+                    self.__flaky(
+                        'Unreliable assumption: An example which satisfied '
+                        'assumptions on the first run now fails it.'
+                    )
+                except BaseException as e:
+                    if len(self.falsifying_examples) <= 1:
+                        raise
+                    tb = get_trimmed_traceback()
+                    report(''.join(traceback.format_exception(type(e), e, tb)))
+                finally:  # pragma: no cover
+                    # This section is in fact entirely covered by the tests in
+                    # test_reproduce_failure, but it seems to trigger a lovely set
+                    # of coverage bugs: The branches show up as uncovered (despite
+                    # definitely being covered - you can add an assert False else
+                    # branch to verify this and see it fail - and additionally the
+                    # second branch still complains about lack of coverage even if
+                    # you add a pragma: no cover to it!
+                    # See https://bitbucket.org/ned/coveragepy/issues/623/
+                    if self.settings.print_blob is not PrintSettings.NEVER:
+                        failure_blob = encode_failure(falsifying_example.buffer)
+                        # Have to use the example we actually ran, not the original
+                        # falsifying example! Otherwise we won't catch problems
+                        # where the repr of the generated example doesn't parse.
+                        can_use_repr = ran_example.can_reproduce_example_from_repr
+
+                        if (
+                            self.settings.print_blob is PrintSettings.ALWAYS or (
+                                self.settings.print_blob is PrintSettings.INFER and
+                                self.settings.verbosity >= Verbosity.normal and
+                                not can_use_repr and
+                                len(failure_blob) < 200
+                            )
+                        ):
+                            report((
+                                '\n'
+                                'You can reproduce this example by temporarily '
+                                'adding @reproduce_failure(%r, %r) as a decorator '
+                                'on your test case') % (
+                                    __version__, failure_blob,))
+
+                print(1234)
+                if self.__was_flaky:
+                    flaky += 1
+                print(123)
+
+            # If we only have one example then we should have raised an error or
+            # flaky prior to this point.
+            assert len(self.falsifying_examples) > 1
+
+            if flaky > 0:
+                raise Flaky((
+                    'Hypothesis found %d distinct failures, but %d of them '
+                    'exhibited some sort of flaky behaviour.') % (
+                        len(self.falsifying_examples), flaky))
+            else:
+                raise MultipleFailures((
+                    'Hypothesis found %d distinct failures.') % (
+                        len(self.falsifying_examples,)))
 
     def __flaky(self, message):
         if len(self.falsifying_examples) <= 1:
@@ -826,7 +832,7 @@ def given(
         )
         def wrapped_test(*arguments, **kwargs):
             # Tell pytest to omit the body of this function from tracebacks
-            __tracebackhide__ = True
+            __tracebackhide__ = False
 
             test = wrapped_test.hypothesis.inner_test
 

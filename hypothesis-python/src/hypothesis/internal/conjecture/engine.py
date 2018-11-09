@@ -912,8 +912,14 @@ class ConjectureRunner(object):
         self.start_time = benchmark_time()
 
         self.reuse_existing_examples()
-        self.generate_new_examples()
-        self.shrink_interesting_examples()
+        while(True) {
+            self.generate_new_examples()
+            # self.interseting_examples, check if fully shrunk exmaple,  by the keys
+            self.shrink_interesting_examples()
+            # exit on reaching max num of valid example , self.exitwith,
+            # quota turned of as soon as max reached,
+        }
+
 
         self.exit_with(ExitReason.finished)
 
@@ -941,7 +947,7 @@ class ConjectureRunner(object):
                 self.exit_with(ExitReason.flaky)
 
         self.clear_secondary_key()
-
+# len(self.shrunk_examples) < len(self.interesting_examples) ==> check if it's fully shrunk
         while len(self.shrunk_examples) < len(self.interesting_examples):
             target, example = min([
                 (k, v) for k, v in self.interesting_examples.items()
