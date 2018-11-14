@@ -514,20 +514,22 @@ class StateForActualGivenExecution(object):
                             ast.parse(example)
                         except SyntaxError:
                             data.can_reproduce_example_from_repr = False
-                        testcase = {}
-                        testcase['test_name'] = test.__name__
-                        testcase['errors'] = []
+                        test_json = {}
+                        test_json['test_name'] = test.__name__
+                        test_json['errors'] = []
+                        test_case = {}
                         variable_list = []
                         for variableset in text_repr[0].split(', '):
                             [name, value] = variableset.split('=')
                             variable_pair = {'v_name': name, 'v_value': value}
                             variable_list.append(variable_pair)
-                        testcase['errors'].append(variable_list)
-                        # testcase['Error type'] = ((expected_failure[0]).__class__.__name__)
-                        # testcase['Error name'] = str(expected_failure[0])
-                        # testcase['Traceback'] = expected_failure[1]
-                        with open('data.txt', 'w') as outfile:
-                            json.dump(testcase, outfile)
+                        test_case['variables'] = variable_list
+                        test_case['error_type'] = ((expected_failure[0]).__class__.__name__)
+                        test_case['error_message'] = str(expected_failure[0])
+                        test_case['traceback'] = expected_failure[1]
+                        test_json['errors'].append(test_case)
+                        with open('data.txt', 'a') as outfile:
+                            json.dump(test_json, outfile)
 
                         report('Falsifying example: %s' % (example,))
                     elif current_verbosity() >= Verbosity.verbose:
