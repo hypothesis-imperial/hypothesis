@@ -79,6 +79,7 @@ if False:
 
 running_under_pytest = False
 global_force_seed = None
+output_file_name = 'data.txt'
 
 
 def new_random():
@@ -528,7 +529,7 @@ class StateForActualGivenExecution(object):
                         test_case['error_message'] = str(expected_failure[0])
                         test_case['traceback'] = expected_failure[1]
                         test_json['errors'].append(test_case)
-                        with open('data.txt', 'a') as outfile:
+                        with open(output_file_name, 'a') as outfile:
                             json.dump(test_json, outfile)
 
                         report('Falsifying example: %s' % (example,))

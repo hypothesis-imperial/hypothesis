@@ -30,6 +30,7 @@ LOAD_PROFILE_OPTION = '--hypothesis-profile'
 VERBOSITY_OPTION = '--hypothesis-verbosity'
 PRINT_STATISTICS_OPTION = '--hypothesis-show-statistics'
 SEED_OPTION = '--hypothesis-seed'
+OUTPUT_OPTION = '--hypothesis-output'
 
 
 class StoringReporter(object):
@@ -70,6 +71,11 @@ def pytest_addoption(parser):
         action='store',
         help='Set a seed to use for all Hypothesis tests'
     )
+    group.addoption(
+        OUTPUT_OPTION,
+        action='store',
+        help='Set the name of output data file to OUTPUT_OPTION'
+    )
 
 
 def pytest_report_header(config):
@@ -98,12 +104,17 @@ def pytest_configure(config):
         settings.register_profile(profile_name, verbosity=verbosity_value)
         settings.load_profile(profile_name)
     seed = config.getoption(SEED_OPTION)
+    file_name = config.getoption(OUTPUT_OPTION)
     if seed is not None:
         try:
             seed = int(seed)
         except ValueError:
             pass
         core.global_force_seed = seed
+
+    if file_name is not None:
+        core.output_file_name = file_name
+
     config.addinivalue_line(
         'markers',
         'hypothesis: Tests which use hypothesis.')
