@@ -529,7 +529,7 @@ class StateForActualGivenExecution(object):
                         test_case['error_message'] = str(expected_failure[0])
                         test_case['traceback'] = expected_failure[1]
                         test_json['errors'].append(test_case)
-                        with open(output_file_name, 'a') as outfile:
+                        with open(output_file_name, 'w') as outfile:
                             json.dump(test_json, outfile)
 
                         report('Falsifying example: %s' % (example,))
