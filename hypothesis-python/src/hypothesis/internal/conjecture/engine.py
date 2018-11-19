@@ -39,7 +39,7 @@ from hypothesis.internal.conjecture.shrinking import Length, Integer, \
 
 # Tell pytest to omit the body of this module from tracebacks
 # http://doc.pytest.org/en/latest/example/simple.html#writing-well-integrated-assertion-helpers
-__tracebackhide__ = True
+__tracebackhide__ = False
 
 
 HUNG_TEST_TIME_LIMIT = 5 * 60
@@ -345,7 +345,7 @@ class ConjectureRunner(object):
                 self.settings)
             self.exit_with(ExitReason.timeout)
 
-        if not self.interesting_examples:
+        if not len(self.shrunk_examples) < len(self.interesting_examples):
             if self.valid_examples >= self.settings.max_examples:
                 self.exit_with(ExitReason.max_examples)
             if self.call_count >= max(
@@ -841,7 +841,7 @@ class ConjectureRunner(object):
 
         zero_bound_queue = []
 
-        while not self.interesting_examples:
+        while not len(self.shrunk_examples) < len(self.interesting_examples):
             if zero_bound_queue:
                 # Whenever we generated an example and it hits a bound
                 # which forces zero blocks into it, this creates a weird
@@ -912,8 +912,10 @@ class ConjectureRunner(object):
         self.start_time = benchmark_time()
 
         self.reuse_existing_examples()
-        self.generate_new_examples()
-        self.shrink_interesting_examples()
+        while True:
+            self.generate_new_examples()
+            self.shrink_interesting_examples()
+            break
 
         self.exit_with(ExitReason.finished)
 
@@ -1204,11 +1206,12 @@ class TargetSelector(object):
         self.used_examples = []
 
     def add(self, data):
-        if data.status == Status.INTERESTING:
+        status = data.status
+        if status == Status.INTERESTING:
+            status = Status.VALID
+        if status < self.best_status:
             return
-        if data.status < self.best_status:
-            return
-        if data.status > self.best_status:
+        if status > self.best_status:
             self.best_status = data.status
             self.reset()
 
