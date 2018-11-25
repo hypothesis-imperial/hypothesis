@@ -24,7 +24,6 @@ from hypothesis.internal.compat import binary_type, print_unicode, \
     escape_unicode_characters
 from hypothesis.utils.dynamicvariables import DynamicVariable
 
-
 def silent(value):
     pass
 
@@ -37,6 +36,24 @@ def default(value):
 
 
 reporter = DynamicVariable(default)
+store = {'note': []}
+
+
+def update_error_store(key, value):
+    print(key)
+    if key == 'note':
+        store[key].append(value)
+    else:
+        store[key] = value
+    
+def clean_error_store():
+    print("called \n\n\n")
+    store['note'] = []
+    if 'data' in store:
+        del store['data']
+    
+def get_error_store():
+    return store
 
 
 def current_reporter():

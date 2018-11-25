@@ -22,8 +22,12 @@ import traceback
 from hypothesis import Verbosity, settings
 from hypothesis.errors import CleanupFailed, InvalidArgument, \
     UnsatisfiedAssumption
-from hypothesis.reporting import report
+from hypothesis.reporting import report, update_error_store, get_error_store
 from hypothesis.utils.dynamicvariables import DynamicVariable
+#from hypothesis import core
+import json
+
+output_file_name = "data.txt"
 
 if False:
     from typing import Any, AnyStr  # noqa
@@ -115,7 +119,11 @@ def note(value):
         raise InvalidArgument(
             'Cannot make notes outside of a test')
     context.notes.append(value)
+            
     if context.is_final or settings.default.verbosity >= Verbosity.verbose:
+        update_error_store('note', value)
+        #print(get_error_store())
+
         report(value)
 
 

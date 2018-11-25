@@ -19,9 +19,9 @@ from __future__ import division, print_function, absolute_import
 
 import pytest
 
-from hypothesis import Verbosity, core, settings
+from hypothesis import Verbosity, core, settings, control
 from hypothesis.reporting import default as default_reporter
-from hypothesis.reporting import with_reporter
+from hypothesis.reporting import with_reporter, clean_error_store
 from hypothesis.statistics import collector
 from hypothesis.internal.compat import OrderedDict, text_type
 from hypothesis.internal.detection import is_hypothesis_test
@@ -114,6 +114,7 @@ def pytest_configure(config):
 
     if file_name is not None:
         core.output_file_name = file_name
+        control.output_file_name = file_name
 
     config.addinivalue_line(
         'markers',
