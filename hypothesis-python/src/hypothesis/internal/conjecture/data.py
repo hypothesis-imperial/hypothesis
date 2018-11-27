@@ -200,7 +200,6 @@ class ConjectureData(object):
         self.__assert_not_frozen('note')
         if not isinstance(value, text_type):
             value = unicode_safe_repr(value)
-        print(value)
         self.output += value
 
     def draw(self, strategy, label=None):

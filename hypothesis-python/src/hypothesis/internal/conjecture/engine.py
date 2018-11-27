@@ -28,7 +28,7 @@ import attr
 from hypothesis import Phase, Verbosity, HealthCheck
 from hypothesis import settings as Settings
 from hypothesis._settings import local_settings, note_deprecation
-from hypothesis.reporting import debug_report, get_error_store, clean_error_store
+from hypothesis.reporting import debug_report
 from hypothesis.internal.compat import Counter, ceil, hbytes, hrange, \
     int_to_bytes, benchmark_time, int_from_bytes, to_bytes_sequence
 from hypothesis.internal.healthcheck import fail_health_check
@@ -576,7 +576,6 @@ class ConjectureRunner(object):
                 pass
             for v in self.interesting_examples.values():
                 self.debug_data(v)
-            print(get_error_store())
             self.debug(
                 u'Run complete after %d examples (%d valid) and %d shrinks'
                 % (self.call_count, self.valid_examples, self.shrinks))
@@ -912,15 +911,10 @@ class ConjectureRunner(object):
     def _run(self):
         self.start_time = benchmark_time()
         self.reuse_existing_examples()
-        # with open(output_file_name, 'w') as outfile:
-        #     json.dump(get_error_store(), outfile)
-        clean_error_store()
-        #print("before", get_error_store())
         while True:
             self.generate_new_examples()
             self.shrink_interesting_examples()
-            #print(get_error_store())
-            
+
 
         self.exit_with(ExitReason.finished)
 

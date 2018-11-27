@@ -24,6 +24,10 @@ from hypothesis.internal.compat import binary_type, print_unicode, \
     escape_unicode_characters
 from hypothesis.utils.dynamicvariables import DynamicVariable
 
+import os
+import json
+
+
 def silent(value):
     pass
 
@@ -40,20 +44,41 @@ store = {'note': []}
 
 
 def update_error_store(key, value):
-    print(key)
     if key == 'note':
         store[key].append(value)
     else:
         store[key] = value
-    
+
+
 def clean_error_store():
-    print("called \n\n\n")
     store['note'] = []
     if 'data' in store:
         del store['data']
-    
+
+
 def get_error_store():
     return store
+
+
+def write_error_store_to_file(fname):
+    output = get_error_store()
+    if os.path.exists(fname):
+        with open(fname, 'r+') as f:
+            outputs = json.loads(f.read())
+            f.seek(0)
+            outputs["outputs"].append(output)
+            json.dump(outputs, f, indent=4)
+            f.truncate()
+    else:
+        with open(fname, 'w') as f:
+            outputs = {}
+            outputs["outputs"] = [output]
+            json.dump(outputs, f)
+
+
+def delete_file(fname):
+    if os.path.exists(fname):
+        os.remove(fname)
 
 
 def current_reporter():

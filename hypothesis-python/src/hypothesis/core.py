@@ -46,7 +46,8 @@ from hypothesis._settings import Phase, Verbosity, HealthCheck, \
 from hypothesis._settings import settings as Settings
 from hypothesis._settings import local_settings, note_deprecation
 from hypothesis.executors import new_style_executor
-from hypothesis.reporting import report, verbose_report, current_verbosity, update_error_store, get_error_store
+from hypothesis.reporting import report, verbose_report, current_verbosity, \
+    update_error_store
 from hypothesis.statistics import note_engine_for_statistics
 from hypothesis.internal.compat import PY2, ceil, hbytes, qualname, \
     binary_type, str_to_bytes, benchmark_time, get_type_hints, \
@@ -496,14 +497,14 @@ class StateForActualGivenExecution(object):
                         current_deadline *= 1.25
                     if runtime >= current_deadline:
                         raise DeadlineExceeded(runtime, self.settings.deadline)
-                        
+
                 return result
 
         def run(data):
             if not hasattr(data, 'can_reproduce_example_from_repr'):
                 data.can_reproduce_example_from_repr = True
             with local_settings(self.settings):
-                with BuildContext(data, is_final=is_final) as b:
+                with BuildContext(data, is_final=is_final):
                     with deterministic_PRNG():
                         args, kwargs = data.draw(self.search_strategy)
                     if expected_failure is not None:
@@ -516,26 +517,20 @@ class StateForActualGivenExecution(object):
                             ast.parse(example)
                         except SyntaxError:
                             data.can_reproduce_example_from_repr = False
-                        test_json = {}
-                        test_json['test_name'] = test.__name__
-                        test_json['errors'] = []
-                        test_case = {}
+                        update_error_store('test_name', test.__name__)
+                        errors = []
+                        one_error = {}
                         variable_list = []
                         for variableset in text_repr[0].split(', '):
                             [name, value] = variableset.split('=')
                             variable_pair = {'v_name': name, 'v_value': value}
                             variable_list.append(variable_pair)
-                        test_case['variables'] = variable_list
-                        test_case['error_type'] = ((expected_failure[0]).__class__.__name__)
-                        test_case['error_message'] = str(expected_failure[0])
-                        test_case['traceback'] = expected_failure[1]
-                        test_json['errors'].append(test_case)
-                        #change_value()
-                        #print(get_value())
-                        #print("\n\n\n", "not exit with", test_json)
-                        # with open(output_file_name, 'w') as outfile:
-                        #     json.dump(test_json, outfile)
-                        update_error_store('data', test_json)
+                        one_error['variables'] = variable_list
+                        one_error['error_type'] = ((expected_failure[0]).__class__.__name__)
+                        one_error['error_message'] = str(expected_failure[0])
+                        one_error['traceback'] = expected_failure[1]
+                        errors.append(one_error)
+                        update_error_store('errors', errors)
                         report('Falsifying example: %s' % (example,))
                     elif current_verbosity() >= Verbosity.verbose:
                         report(
@@ -675,7 +670,7 @@ class StateForActualGivenExecution(object):
         self.failed_normally = True
 
         flaky = 0
-        
+
         for falsifying_example in self.falsifying_examples:
             ran_example = ConjectureData.for_buffer(falsifying_example.buffer)
             self.__was_flaky = False
@@ -982,7 +977,6 @@ def given(
                         e.with_traceback(get_trimmed_traceback())
                     raise the_error_hypothesis_found
 
-
         for attrib in dir(test):
             if not (attrib.startswith('_') or hasattr(wrapped_test, attrib)):
                 setattr(wrapped_test, attrib, getattr(test, attrib))
@@ -1000,7 +994,6 @@ def given(
             test, '_hypothesis_internal_use_reproduce_failure', None
         )
         wrapped_test.hypothesis = HypothesisHandle(test)
-                            
 
         return wrapped_test
 
@@ -1044,7 +1037,6 @@ def find(
                 data.is_find = True
                 with deterministic_PRNG():
                     result = data.draw(search)
-                    print(result)
                     data.note(result)
                     success = condition(result)
             except UnsatisfiedAssumption:

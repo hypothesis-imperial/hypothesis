@@ -19,9 +19,10 @@ from __future__ import division, print_function, absolute_import
 
 import pytest
 
-from hypothesis import Verbosity, core, settings, control
+from hypothesis import Verbosity, core, settings
 from hypothesis.reporting import default as default_reporter
-from hypothesis.reporting import with_reporter, clean_error_store
+from hypothesis.reporting import with_reporter, clean_error_store,\
+    write_error_store_to_file, delete_file
 from hypothesis.statistics import collector
 from hypothesis.internal.compat import OrderedDict, text_type
 from hypothesis.internal.detection import is_hypothesis_test
@@ -30,7 +31,11 @@ LOAD_PROFILE_OPTION = '--hypothesis-profile'
 VERBOSITY_OPTION = '--hypothesis-verbosity'
 PRINT_STATISTICS_OPTION = '--hypothesis-show-statistics'
 SEED_OPTION = '--hypothesis-seed'
+SERVER_OPTION = '--hypothesis-server'
 OUTPUT_OPTION = '--hypothesis-output'
+
+output_file_name = 'data.json'
+server_option = False
 
 
 class StoringReporter(object):
@@ -76,6 +81,12 @@ def pytest_addoption(parser):
         action='store',
         help='Set the name of output data file to OUTPUT_OPTION'
     )
+    group.addoption(
+        SERVER_OPTION,
+        action='store_true',
+        help='Configure when using fuzzing server',
+        default=False
+    )
 
 
 def pytest_report_header(config):
@@ -105,6 +116,8 @@ def pytest_configure(config):
         settings.load_profile(profile_name)
     seed = config.getoption(SEED_OPTION)
     file_name = config.getoption(OUTPUT_OPTION)
+    global server_option, output_file_name
+    server_option = config.getoption(SERVER_OPTION)
     if seed is not None:
         try:
             seed = int(seed)
@@ -113,8 +126,10 @@ def pytest_configure(config):
         core.global_force_seed = seed
 
     if file_name is not None:
-        core.output_file_name = file_name
-        control.output_file_name = file_name
+        output_file_name = file_name
+
+    if server_option:
+        delete_file(output_file_name)
 
     config.addinivalue_line(
         'markers',
@@ -136,7 +151,10 @@ def pytest_runtest_call(item):
 
         with collector.with_value(note_statistics):
             with with_reporter(store):
+                clean_error_store()
                 yield
+                if server_option:
+                    write_error_store_to_file(output_file_name)
         if store.results:
             item.hypothesis_report_information = list(store.results)
 
