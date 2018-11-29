@@ -724,6 +724,7 @@ class StateForActualGivenExecution(object):
                             'adding @reproduce_failure(%r, %r) as a decorator '
                             'on your test case') % (
                                 __version__, failure_blob,))
+                        update_error_store("reproduce", str((__version__, failure_blob)))
             if self.__was_flaky:
                 flaky += 1
 
@@ -883,8 +884,7 @@ def given(
                 had_seed=wrapped_test._hypothesis_internal_use_seed
             )
 
-            reproduce_failure = \
-                wrapped_test._hypothesis_internal_use_reproduce_failure
+            reproduce_failure = wrapped_test._hypothesis_internal_use_reproduce_failure
 
             if reproduce_failure is not None:
                 expected_version, failure = reproduce_failure
@@ -941,8 +941,7 @@ def given(
                 else:
                     state.run()
             except BaseException as e:
-                generated_seed = \
-                    wrapped_test._hypothesis_internal_use_generated_seed
+                generated_seed = wrapped_test._hypothesis_internal_use_generated_seed
                 with local_settings(settings):
                     if not (state.failed_normally or generated_seed is None):
                         if running_under_pytest:
@@ -973,8 +972,7 @@ def given(
                     # trimmed version.  Using a variable ensures that the line
                     # which will actually appear in trackbacks is as clear as
                     # possible - "raise the_error_hypothesis_found".
-                    the_error_hypothesis_found = \
-                        e.with_traceback(get_trimmed_traceback())
+                    the_error_hypothesis_found = e.with_traceback(get_trimmed_traceback())
                     raise the_error_hypothesis_found
 
         for attrib in dir(test):
