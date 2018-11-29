@@ -505,6 +505,7 @@ class StateForActualGivenExecution(object):
                 data.can_reproduce_example_from_repr = True
             with local_settings(self.settings):
                 with BuildContext(data, is_final=is_final):
+                    update_error_store('test_name', test.__name__)
                     with deterministic_PRNG():
                         args, kwargs = data.draw(self.search_strategy)
                     if expected_failure is not None:
@@ -517,7 +518,6 @@ class StateForActualGivenExecution(object):
                             ast.parse(example)
                         except SyntaxError:
                             data.can_reproduce_example_from_repr = False
-                        update_error_store('test_name', test.__name__)
                         errors = []
                         one_error = {}
                         variable_list = []

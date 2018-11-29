@@ -62,18 +62,21 @@ def get_error_store():
 
 def write_error_store_to_file(fname):
     output = get_error_store()
-    if os.path.exists(fname):
-        with open(fname, 'r+') as f:
-            outputs = json.loads(f.read())
-            f.seek(0)
-            outputs["outputs"].append(output)
-            json.dump(outputs, f, indent=4)
-            f.truncate()
-    else:
+    if not os.path.exists(fname):
         with open(fname, 'w') as f:
             outputs = {}
-            outputs["outputs"] = [output]
-            json.dump(outputs, f)
+            outputs["pass"] = []
+            outputs["fail"] = []
+            json.dump(outputs, f, indent=4)
+    with open(fname, 'r+') as f:
+        outputs = json.loads(f.read())
+        f.seek(0)
+        if "errors" in output:
+            outputs["pass"].append(output)
+        else:
+            outputs["fail"].append(output)
+        json.dump(outputs, f, indent=4)
+        f.truncate()
 
 
 def delete_file(fname):
