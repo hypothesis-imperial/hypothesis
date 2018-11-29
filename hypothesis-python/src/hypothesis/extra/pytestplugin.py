@@ -22,7 +22,7 @@ import pytest
 from hypothesis import Verbosity, core, settings
 from hypothesis.reporting import default as default_reporter
 from hypothesis.reporting import with_reporter, clean_error_store,\
-    write_error_store_to_file, delete_file
+    write_error_store_to_file, delete_file, update_error_store
 from hypothesis.statistics import collector
 from hypothesis.internal.compat import OrderedDict, text_type
 from hypothesis.internal.detection import is_hypothesis_test
@@ -148,13 +148,30 @@ def pytest_runtest_call(item):
 
         def note_statistics(stats):
             gathered_statistics[item.nodeid] = stats
+            statistics = {"passing_examples": stats.passing_examples,
+                          "failing_examples": stats.failing_examples,
+                          "invalid_examples": stats.invalid_examples,
+                          "runtimes": stats.runtimes}
+            update_error_store("statistics", statistics)
 
         with collector.with_value(note_statistics):
             with with_reporter(store):
                 clean_error_store()
                 yield
+                # (name, statistics) = gathered_statistics.items()[-1]
+                # print(gathered_statistics.items())
+                # print(name, statistics)
+                # update_error_store['test_name'] = name
+                # update_error_store['statistics'] = statistics
+
+                # print(name)
+                # print(statistics.passing_examples, statistics.failing_examples,
+                #       statistics.invalid_examples)
+                # update_error_store()
                 if server_option:
                     write_error_store_to_file(output_file_name)
+        # print(gathered_statistics)
+
         if store.results:
             item.hypothesis_report_information = list(store.results)
 
@@ -180,7 +197,6 @@ def pytest_terminal_summary(terminalreporter):
         if not statistics.has_runs:
             terminalreporter.write_line('  - Test was never run')
             continue
-
         terminalreporter.write_line((
             '  - %d passing examples, %d failing examples,'
             ' %d invalid examples') % (
