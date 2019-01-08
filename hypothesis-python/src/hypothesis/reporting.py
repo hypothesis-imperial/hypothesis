@@ -59,10 +59,12 @@ def update_error_store(key, value):
 
 def clean_error_store():
     store['note'] = []
-    if 'data' in store:
-        del store['data']
     if 'errors' in store:
         del store['errors']
+    if 'test_name' in store:
+        del store['test_name']
+    if 'statistics' in store:
+        del store['statistics']
 
 
 def get_error_store():
