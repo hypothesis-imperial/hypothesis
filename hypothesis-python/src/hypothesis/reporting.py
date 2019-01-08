@@ -61,6 +61,8 @@ def clean_error_store():
     store['note'] = []
     if 'data' in store:
         del store['data']
+    if 'errors' in store:
+        del store['errors']
 
 
 def get_error_store():
