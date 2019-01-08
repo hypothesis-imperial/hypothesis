@@ -43,6 +43,13 @@ reporter = DynamicVariable(default)
 store = {'note': []}
 
 
+def add_one_error(error):
+    if 'errors' in store:
+        store['errors'].append(error)
+    else:
+        store['errors'] = [error]
+
+
 def update_error_store(key, value):
     if key == 'note':
         store[key].append(value)

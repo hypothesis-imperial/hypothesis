@@ -47,7 +47,7 @@ from hypothesis._settings import settings as Settings
 from hypothesis._settings import local_settings, note_deprecation
 from hypothesis.executors import new_style_executor
 from hypothesis.reporting import report, verbose_report, current_verbosity, \
-    update_error_store
+    update_error_store, add_one_error
 from hypothesis.statistics import note_engine_for_statistics
 from hypothesis.internal.compat import PY2, ceil, hbytes, qualname, \
     binary_type, str_to_bytes, benchmark_time, get_type_hints, \
@@ -518,7 +518,6 @@ class StateForActualGivenExecution(object):
                             ast.parse(example)
                         except SyntaxError:
                             data.can_reproduce_example_from_repr = False
-                        errors = []
                         one_error = {}
                         variable_list = []
                         for variableset in text_repr[0].split(', '):
@@ -529,8 +528,7 @@ class StateForActualGivenExecution(object):
                         one_error['error_type'] = ((expected_failure[0]).__class__.__name__)
                         one_error['error_message'] = str(expected_failure[0])
                         one_error['traceback'] = expected_failure[1]
-                        errors.append(one_error)
-                        update_error_store('errors', errors)
+                        add_one_error(one_error)
                         report('Falsifying example: %s' % (example,))
                     elif current_verbosity() >= Verbosity.verbose:
                         report(
